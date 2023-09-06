@@ -1,8 +1,8 @@
-import csv
 import datetime
 import os
 import time
 
+import pandas as pd
 from dotenv import load_dotenv
 from loguru import logger
 from selenium import webdriver
@@ -271,7 +271,7 @@ def page_search(
                 time.sleep(click_wait)
                 logger.error("Exception at 0007")
 
-        # append (a) line to file
+        # append (a) line to list_jobs
         date_time = datetime.datetime.now().strftime("%d%b%Y-%H:%M:%S")
         search_keyword = search_keyword.replace("%20", " ")
         list_job = [
@@ -295,16 +295,32 @@ def page_search(
         list_jobs.append(list_job)
         logger.info(f"Current job: {list_job}")
 
-    with open(file, "a") as f:
-        w = csv.writer(f)
-        w.writerows(list_jobs)
-        print(list_jobs)
-        logger.info("Wrote a line to the csv")
-        list_jobs = []
+    # Convert list_jobs to a DataFrame
+    df_jobs = pd.DataFrame(
+        list_jobs,
+        columns=[
+            "date_time",
+            "search_keyword",
+            "search_count",
+            "job_id",
+            "job_title",
+            "company",
+            "location",
+            "remote",
+            "update_time",
+            "applicants",
+            "job_pay",
+            "job_time",
+            "job_position",
+            "company_size",
+            "company_industry",
+            "job_details",
+        ],
+    )
 
     logger.info(
         f"Page {round(search_page/25) + 1} of {round(search_count/25)} loaded for {search_keyword}"
     )
     search_page += 25
 
-    return search_page, search_count, url_search
+    return search_page, search_count, url_search, df_jobs
