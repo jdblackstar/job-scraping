@@ -4,8 +4,10 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from dotenv import load_dotenv
+from loguru import logger
 
 from helpers.db_helper import write_to_db
+from helpers.discord_alert import on_dag_finish, on_ready
 from scrape.linkedin_scrape import login, page_search
 
 load_dotenv()
@@ -23,22 +25,52 @@ default_args = {
 
 dag = DAG("linkedin_scraper", default_args=default_args, schedule_interval=timedelta(1))
 
-task_login = PythonOperator(
-    task_id="login",
-    python_callable=login,
+task_post_starting_message = PythonOperator(
+    task_id="discord_start",
+    python_callable=on_ready,
+    op_args=[],
     dag=dag,
 )
 
-task_page_search = PythonOperator(
-    task_id="page_search",
+task_post_ending_message = PythonOperator(
+    task_id="discord_start",
+    python_callable=on_dag_finish,
+    op_args=[],
+    dag=dag,
+)
+
+task_li_de_search = PythonOperator(
+    task_id="li_de_search",
     python_callable=page_search,
+    op_args=[
+        login(),
+        "90000084",  # sf bay area
+        "data engineer",  # data engineer job title
+        "2,1,3",  # remote, hybrid, on-site
+        "r86400",  # last 24 hours
+        "1",
+        logger,
+    ],
     dag=dag,
 )
 
-task_write_to_db = PythonOperator(
-    task_id="write_to_db",
-    python_callable=write_to_db,
-    dag=dag,
+task_le_swe_search = PythonOperator(
+    task_id="li_swe_search",
+    python_callable=page_search,
+    op_args=[
+        login(),
+        "90000084",  # sf bay area
+        "software engineer data",  # software engineer job title
+        "2,1,3",  # remote, hybrid, on-site
+        "r86400",  # last 24 hours
+        "1",
+        logger,
+    ],
 )
 
-task_login >> task_page_search >> task_write_to_db
+# run the actual DAG
+(
+    task_post_starting_message
+    >> [task_li_de_search, task_le_swe_search]
+    >> task_post_ending_message
+)

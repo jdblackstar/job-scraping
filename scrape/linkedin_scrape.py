@@ -55,8 +55,6 @@ def page_search(
     search_remote,
     search_posted,
     search_page,
-    search_count,
-    file,
     logger,
 ):
     """
