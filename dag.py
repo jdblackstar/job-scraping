@@ -6,8 +6,8 @@ from airflow.operators.python_operator import PythonOperator
 from dotenv import load_dotenv
 from loguru import logger
 
-from helpers.db_helper import write_to_db
-from helpers.discord_alert import on_dag_finish, on_ready
+from helpers.db_helper import write_to_mysql
+from helpers.discord_alert import on_dag_status_change
 from scrape.linkedin_scrape import login, page_search
 
 load_dotenv()
@@ -25,16 +25,16 @@ default_args = {
 
 dag = DAG("linkedin_scraper", default_args=default_args, schedule_interval=timedelta(1))
 
-task_post_starting_message = PythonOperator(
+task_discord_start = PythonOperator(
     task_id="discord_start",
-    python_callable=on_ready,
+    python_callable=on_dag_status_change("start"),
     op_args=[],
     dag=dag,
 )
 
-task_post_ending_message = PythonOperator(
-    task_id="discord_start",
-    python_callable=on_dag_finish,
+task_discord_finish = PythonOperator(
+    task_id="discord_finish",
+    python_callable=on_dag_status_change("finish"),
     op_args=[],
     dag=dag,
 )
