@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -23,7 +23,7 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
-dag = DAG("linkedin_scraper", default_args=default_args, schedule_interval=timedelta(1))
+dag = DAG("source_linkedin", default_args=default_args, schedule_interval=timedelta(1))
 
 task_discord_start = PythonOperator(
     task_id="discord_start",
@@ -70,7 +70,7 @@ task_le_swe_search = PythonOperator(
 
 # run the actual DAG
 (
-    task_post_starting_message
+    task_discord_start
     >> [task_li_de_search, task_le_swe_search]
-    >> task_post_ending_message
+    >> task_discord_finish
 )
